@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<meta name="format-detection" content="telephone=no" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+		<meta http-equiv="pragma" content="no-cache">
+		<meta http-equiv="cache-control" content="no-cache">
+		<meta http-equiv="expires" content="0">
+	</head>
+	<body>
+		<button id="login_google">Google</button>
+		<script src="./js/jquery-1.8.3.min.js"></script>
+		<script src="./js/webview.js"></script>
+		<script src="https://apis.google.com/js/api:client.js"></script>
+		<script>
+			function getParams(params){
+				var reg = new RegExp("(^|&)" + params + "=([^&]*)(&|$)");
+				var url = decodeURI(decodeURI(window.location.search));
+				var r = window.location.search.substr(1).match(reg);
+				if(r!=null) return unescape(r[2])
+				return '';
+			}
+			gapi.load('auth2', function () {
+			    auth2 = gapi.auth2.init({
+			        client_id: '271383992151-ub9ohhdknjlsvlfhg2s5sbgsnh9lrdbc.apps.googleusercontent.com',  //第二步申请的客户端id
+			        cookiepolicy: "single_host_origin"
+			    });
+			
+			//绑定登陆按钮    
+			    attachSignin(document.getElementById('login_google'));
+			});
+			function attachSignin(element) {
+			    auth2.attachClickHandler(element, {},
+			        function (googleUser) {
+			           //获取用户信息     
+						var profile = googleUser.getBasicProfile();
+						// window.location.href = '/';
+			            console.log(profile);
+						var agent_code = getParams("agent_code");
+						var lang = getParams("lang");
+						var url = 'https://www.ff2016.vip/api/user/googlelogin?lang='+lang;
+						$.ajax({
+							url:url,
+							type:'POST',
+							data:{email:profile.yv,google_id:profile.RW,agent_code:agent_code},
+							dataType:'json',
+							success:function(res){
+								if(res.code == 1){
+									uni.setStorageSync('userid', res.data.userinfo.id);
+									uni.setStorageSync('uniIdToken',  res.data.userinfo.token);
+									uni.setStorageSync('tokenExpired',  res.data.userinfo.expires_in);
+									uni.setStorageSync('userInfo',  res.data.userinfo);
+									setTimeout(()=>{
+										uni.reLaunch({
+											url:"/pages/index/index"
+										});
+									},1000)
+								}else{
+									alert(res.msg)
+								}
+								
+							},
+							error:function(e){
+								alert(e)
+							}
+							
+						});
+						
+			        }, function (error) {
+			            console.log(JSON.stringify(error, undefined, 2));
+						alert(error)
+			        }
+			    );
+			}
+		</script>
+	</body>
+
+</html>
